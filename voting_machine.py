@@ -352,30 +352,38 @@ class VotingMachine:
         except: pass
 
     def _cleanup_session(self):
+        # ✅ 1. If voting was active and votes exist, finalize and exit early
+        if self.voting_active and self.votes:
+            self._finalize_votes()
+            self._end_session()
+            return  # Stop here so we don't double-clear or reset
+
+        # ✅ 2. Otherwise, reset to blank state
         self.voting_active = False
         self.votes.clear()
         self.progress_var.set("Votes cast: 0/6")
         self.start_btn.config(state=tk.NORMAL)
 
+        # ✅ 3. Keep student screen open and blank (if enabled)
         if ENABLE_STUDENT_SCREEN:
-            self.student_win.withdraw()
+            self.student_label.config(image="", text="")
 
+        # ✅ 4. Unhook keyboard if any
         if self.hook:
             keyboard.unhook(self.hook)
             self.hook = None
 
         self.last_key = None
 
-        # Re-enable "New Session" and "Test Keyboard" buttons
+        # ✅ 5. Re-enable buttons
         self.new_session_btn.config(state="normal")
         self.test_keyboard_btn.config(state="normal")
 
-        # Remove temp vote file if it exists
+        # ✅ 6. Remove temporary vote file
         try:
             os.remove(TEMP_CSV)
         except:
             pass
-
 
     def open_test_keyboard(self):
         pin = simpledialog.askstring("PIN Required", "Enter 4-digit staff PIN to test keyboard:", show="*")
@@ -448,8 +456,9 @@ class VotingMachine:
         self.voting_active = False
 
         # Hide student window if enabled
+        # Clear student screen if enabled
         if ENABLE_STUDENT_SCREEN:
-            self.student_win.withdraw()
+            self.student_label.config(image="", text="")  # keep window open but blank
 
         # Unhook keyboard listener
         if self.hook:
